@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ur">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>میری فیورٹ لسٹ</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="card">
+        <h1 class="arabic-text" style="color: #8b5cf6;">میری محفوظ کردہ آیات اور سورتیں</h1>
+        <p class="urdu-text">اپنا ٹوکن درج کریں اور اپنی محفوظ کردہ فہرست دیکھیں</p>
+        
+        <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0;">
+            <input type="text" id="user-token" class="input-box" placeholder="اپنا ٹوکن یہاں لکھیں..." dir="ltr">
+            <button onclick="fetchFavorites()" class="btn" style="background: #8b5cf6; width: 75%;">ڈیٹا لائیں</button>
+            <p id="msg" style="margin-top: 15px; font-weight: bold; font-size: 16px;"></p>
+        </div>
+
+        <div id="results-div" style="margin-top: 20px; text-align: right;">
+            <!-- ڈیٹا یہاں آئے گا -->
+        </div>
+
+        <br><br><a href="/" class="btn" style="background: #64748b;">ہوم پیج پر جائیں</a>
+    </div>
+
+    <script>
+        async function fetchFavorites() {
+            const token = document.getElementById('user-token').value;
+            const msgEl = document.getElementById('msg');
+            const resultsDiv = document.getElementById('results-div');
+            
+            resultsDiv.innerHTML = ""; // پرانا ڈیٹا مٹانا
+
+            if (!token) {
+                msgEl.style.color = "red"; msgEl.innerText = "❌ ٹوکن درج کریں!"; return;
+            }
+
+            msgEl.style.color = "#3b82f6"; msgEl.innerText = "ڈیٹا تلاش کیا جا رہا ہے...";
+
+            try {
+                const response = await fetch('/api/get_favorites', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ custom_token: token })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    msgEl.innerText = "";
+                    const list = result.favorites;
+                    
+                    if(list.length === 0) {
+                        resultsDiv.innerHTML = "<p class='urdu-text' style='text-align:center; color:red;'>آپ کی فہرست خالی ہے۔</p>";
+                        return;
+                    }
+
+                    // ڈیٹا کو سکرین پر خوبصورت انداز میں دکھانا
+                    list.forEach(item => {
+                        // اگر آیت نمبر 0 ہے، تو اس کا مطلب ہے یہ پوری سورہ ہے
+                        const isSurah = (item.ayah_number === 0);
+                        const title = isSurah ? `مکمل سورہ نمبر ${item.surah_number}` : `سورہ ${item.surah_number} - آیت ${item.ayah_number}`;
+                        const link = isSurah ? `/surah/${item.surah_number}` : `/ayah/${item.surah_number}/${item.ayah_number}`;
+                        
+                        resultsDiv.innerHTML += `
+                        <div class="search-result" style="border-right-color: #8b5cf6;">
+                            <p style="color: #8b5cf6; font-weight: bold; font-size: 18px; margin: 0 0 10px 0;">${title}</p>
+                            <p class="urdu-text" style="margin: 0 0 10px 0; color: #475569;"><b>نوٹ:</b> ${item.note}</p>
+                            <a href="${link}" class="btn" style="background: #10b981; padding: 8px 15px; font-size: 14px;">تلاوت سنیں</a>
+                        </div>`;
+                    });
+                } else {
+                    msgEl.style.color = "red"; msgEl.innerText = "❌ " + result.detail;
+                }
+            } catch (error) {
+                msgEl.style.color = "red"; msgEl.innerText = "❌ سرور کا مسئلہ۔";
+            }
+        }
+    </script>
+</body>
+</html>

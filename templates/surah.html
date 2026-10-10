@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ur">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ surah_name }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="card">
+        <h1 class="arabic-text" style="color: #10b981;">{{ surah_name }}</h1>
+        <p class="urdu-text">قاری: <b>{{ reciter_name }}</b></p>
+        <p class="urdu-text" id="status-text">تلاوت چل رہی ہے...</p>
+        <audio id="player" controls autoplay></audio>
+
+        <!-- نیا فیورٹ بٹن اور فارم -->
+        <button id="show-fav-btn" onclick="toggleFavForm()" class="btn" style="background: #3b82f6; width: 75%; margin-top: 20px;">
+            اس پوری سورۃ کو فیورٹ میں شامل کریں 🌟
+        </button>
+
+        <div id="fav-form-div" style="display: none; background: #f8fafc; padding: 20px; border-radius: 10px; margin-top: 20px; border: 1px solid #e2e8f0;">
+            <p class="urdu-text" style="color: #f59e0b; font-weight: bold; margin-bottom: 15px;">اپنی تفصیلات درج کریں</p>
+            <input type="text" id="note" class="input-box" placeholder="اپنا نوٹ لکھیں (جیسے: میری پسندیدہ سورۃ)...">
+            <input type="text" id="user-token" class="input-box" placeholder="اپنا بنایا ہوا ٹوکن یہاں لکھیں..." dir="ltr">
+            <button onclick="saveFavorite()" class="btn" style="background: #f59e0b; width: 75%;">محفوظ کریں</button>
+            <p id="msg" style="margin-top: 15px; font-weight: bold; font-size: 16px;"></p>
+        </div>
+
+        <br><br><a href="/" class="btn" style="background: #64748b; margin-top: 20px;">واپس جائیں</a>
+    </div>
+    
+    <script>
+        const audios = {{ audios | safe }}; 
+        let current = 0; 
+        const player = document.getElementById("player"); 
+        
+        if (audios.length > 0) {
+            player.src = audios[current];
+            player.onended = function() { 
+                current++; 
+                if(current < audios.length) { 
+                    player.src = audios[current]; 
+                    player.play(); 
+                } else { 
+                    document.getElementById("status-text").innerText = "تلاوت مکمل ہو گئی ہے۔"; 
+                } 
+            };
+        }
+
+        function toggleFavForm() {
+            document.getElementById('fav-form-div').style.display = 'block';
+            document.getElementById('show-fav-btn').style.display = 'none';
+        }
+
+        async function saveFavorite() {
+            const note = document.getElementById('note').value;
+            const token = document.getElementById('user-token').value;
+            const msgEl = document.getElementById('msg');
+            const pathParts = window.location.pathname.split('/');
+
+            if (!token) {
+                msgEl.style.color = "red"; msgEl.innerText = "❌ ٹوکن درج کریں!"; return;
+            }
+
+            msgEl.style.color = "#3b82f6"; msgEl.innerText = "محفوظ کیا جا رہا ہے...";
+
+            try {
+                const response = await fetch('/api/favorites', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        surah_number: parseInt(pathParts[2]),
+                        ayah_number: 0, // 0 کا مطلب یہ پوری سورۃ ہے
+                        note: note,
+                        custom_token: token
+                    })
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    msgEl.style.color = "green"; msgEl.innerText = "✅ " + result.message;
+                    document.getElementById('note').value = "";
+                } else {
+                    msgEl.style.color = "red"; msgEl.innerText = "❌ " + result.detail;
+                }
+            } catch (error) {
+                msgEl.style.color = "red"; msgEl.innerText = "❌ سرور کا مسئلہ۔";
+            }
+        }
+    </script>
+</body>
+</html>

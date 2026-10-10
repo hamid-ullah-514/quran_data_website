@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ur">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قرآن مجید تلاوت</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="card">
+        <h1 class="arabic-text" style="color: #10b981; font-size: 45px;">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</h1>
+        <p class="urdu-text" style="font-weight: bold;">قرآن مجید تلاوت اور سرچ ایپ</p>
+        
+        <div style="background: #fffbeb; padding: 20px; border-radius: 10px; border: 1px solid #fcd34d; margin-bottom: 20px;">
+            <p class="urdu-text" style="color: #d97706; font-weight: bold;">اپنا اکاؤنٹ اور خود کا ٹوکن بنائیں</p>
+            <input type="text" id="reg-user" class="input-box" placeholder="یوزر نیم (جیسے: hamid)...">
+            <input type="password" id="reg-pass" class="input-box" placeholder="پاس ورڈ...">
+            <input type="text" id="reg-token" class="input-box" placeholder="اپنی مرضی کا کوئی بھی ٹوکن (نمبر یا نام) لکھیں...">
+            
+            <button onclick="registerAccount()" class="btn" style="background: #f59e0b; width: 70%;">اکاؤنٹ بنائیں</button>
+            <p id="reg-msg" style="margin-top: 10px; font-weight: bold;"></p>
+        </div>
+
+        <!-- فیورٹ پیج پر جانے کا نیا بٹن -->
+        <a href="/my-favorites" class="btn" style="background: #8b5cf6; width: 70%; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);">🌟 میری محفوظ کردہ آیات اور سورتیں دیکھیں 🌟</a>
+
+        <div style="background: #e0f2fe; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <p class="urdu-text" style="color: #0369a1;"><b>قرآن مجید میں تلاش کریں:</b></p>
+            <form action="/search" method="get">
+                <input type="text" name="query" class="input-box" placeholder="تلاش کریں..." required value="{{ query if query else '' }}">
+                <button type="submit" class="btn" style="background: #3b82f6;">تلاش کریں</button>
+            </form>
+        </div>
+
+        {% if results is defined %}
+            <h2 class="urdu-text" style="color: #3b82f6;">لفظ "{{ query }}" کے تلاش کے نتائج</h2>
+            {% for match in results %}
+            <div class="search-result">
+                <p style="color: #10b981; font-weight: bold;">{{ match.surah.name }} - آیت {{ match.numberInSurah }}</p>
+                <p class="urdu-text">{{ match.text }}</p>
+                <a href="/ayah/{{ match.surah.number }}/{{ match.numberInSurah }}" style="color: #3b82f6;">تلاوت سنیں</a>
+            </div>
+            {% endfor %}
+            <br><a href="/" class="btn" style="background: #64748b;">واپس جائیں</a>
+        {% endif %}
+    </div>
+
+    <script>
+        async function registerAccount() {
+            const user = document.getElementById('reg-user').value;
+            const pass = document.getElementById('reg-pass').value;
+            const token = document.getElementById('reg-token').value;
+            const msgEl = document.getElementById('reg-msg');
+
+            if(!user || !pass || !token) {
+                msgEl.style.color = 'red';
+                msgEl.innerText = "تمام خانے پُر کریں۔";
+                return;
+            }
+
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass, custom_token: token })
+            });
+            const result = await response.json();
+
+            if (response.ok) {
+                msgEl.style.color = 'green'; msgEl.innerText = "✅ " + result.message;
+            } else {
+                msgEl.style.color = 'red'; msgEl.innerText = "❌ " + result.detail;
+            }
+        }
+    </script>
+</body>
+</html>

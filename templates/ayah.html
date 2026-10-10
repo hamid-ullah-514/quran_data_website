@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ur">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آیت تلاوت</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="card">
+        <h2 class="arabic-text">{{ text }}</h2>
+        <p class="urdu-text">قاری: <b>{{ reciter_name }}</b></p>
+        <audio controls autoplay><source src="{{ audio_url }}" type="audio/mpeg"></audio>
+
+        <!-- نیا بٹن: جو کلک کرنے پر فارم کھولے گا -->
+        <button id="show-fav-btn" onclick="toggleFavForm()" class="btn" style="background: #3b82f6; width: 75%; margin-top: 20px;">
+            اس آیت کو فیورٹ میں شامل کریں 🌟
+        </button>
+
+        <!-- فیورٹ فارم: (جو شروع میں display: none کی وجہ سے چھپا ہوگا) -->
+        <div id="fav-form-div" style="display: none; background: #f8fafc; padding: 20px; border-radius: 10px; margin-top: 20px; border: 1px solid #e2e8f0;">
+            <p class="urdu-text" style="color: #f59e0b; font-weight: bold; margin-bottom: 15px;">اپنی تفصیلات درج کریں</p>
+            
+            <input type="text" id="note" class="input-box" placeholder="اپنا نوٹ لکھیں (جیسے: بہترین آیت)...">
+            <input type="text" id="user-token" class="input-box" placeholder="اپنا بنایا ہوا ٹوکن یہاں لکھیں..." dir="ltr">
+            
+            <button onclick="saveFavorite()" class="btn" style="background: #f59e0b; width: 75%;">محفوظ کریں</button>
+            
+            <!-- میسج دکھانے کی جگہ -->
+            <p id="msg" style="margin-top: 15px; font-weight: bold; font-size: 16px;"></p>
+        </div>
+
+        <br><br><a href="/" class="btn" style="background: #64748b;">واپس جائیں</a>
+    </div>
+
+    <script>
+        // فارم دکھانے والا فنکشن
+        function toggleFavForm() {
+            document.getElementById('fav-form-div').style.display = 'block'; // فارم ظاہر کریں
+            document.getElementById('show-fav-btn').style.display = 'none';  // نیلا بٹن غائب کر دیں
+        }
+
+        // ڈیٹا بیس میں محفوظ کرنے والا فنکشن
+        async function saveFavorite() {
+            const note = document.getElementById('note').value;
+            const token = document.getElementById('user-token').value;
+            const msgEl = document.getElementById('msg');
+            const pathParts = window.location.pathname.split('/');
+
+            if (!token) {
+                msgEl.style.color = "red"; 
+                msgEl.innerText = "❌ برائے مہربانی اپنا ٹوکن درج کریں!"; 
+                return;
+            }
+
+            msgEl.style.color = "#3b82f6";
+            msgEl.innerText = "محفوظ کیا جا رہا ہے... براہ کرم انتظار کریں۔";
+
+            try {
+                const response = await fetch('/api/favorites', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        surah_number: parseInt(pathParts[2]),
+                        ayah_number: parseInt(pathParts[3]),
+                        note: note,
+                        custom_token: token
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    msgEl.style.color = "green"; 
+                    msgEl.innerText = "✅ " + result.message;
+                    document.getElementById('note').value = ""; // محفوظ ہونے کے بعد نوٹ مٹا دیں
+                } else {
+                    msgEl.style.color = "red"; 
+                    msgEl.innerText = "❌ " + (result.detail || "کوئی مسئلہ پیش آ گیا۔");
+                }
+            } catch (error) {
+                // اگر سرور بند ہو یا انٹرنیٹ کا مسئلہ ہو تو یہ میسج آئے گا
+                msgEl.style.color = "red"; 
+                msgEl.innerText = "❌ سرور سے رابطہ نہیں ہو سکا۔";
+            }
+        }
+    </script>
+</body>
+</html>
